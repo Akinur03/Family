@@ -17,6 +17,8 @@ import {
   Tag,
   ArrowUpDown,
   Download,
+  FileSpreadsheet,
+  X,
 } from 'lucide-react';
 
 interface TransactionsTableViewProps {
@@ -32,6 +34,7 @@ interface TransactionsTableViewProps {
   onRejectTransaction?: (id: string, notes: string) => Promise<void>;
   title?: string;
   subtitle?: string;
+  onOpenGoogleSheets?: () => void;
 }
 
 export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
@@ -47,6 +50,7 @@ export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
   onRejectTransaction,
   title = 'Family Transactions Ledger',
   subtitle = 'Review and manage daily expenses, income deposits, and proof documents.',
+  onOpenGoogleSheets,
 }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -64,12 +68,12 @@ export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
     if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
 
     if (search.trim()) {
-      const q = search.toLowerCase();
+      const q = search.trim().toLowerCase();
       const matchTitle = tx.title.toLowerCase().includes(q);
-      const matchUser = tx.userName.toLowerCase().includes(q);
+      const matchNotes = Boolean(tx.notes && tx.notes.toLowerCase().includes(q));
       const matchCat = tx.categoryName.toLowerCase().includes(q);
-      const matchNotes = tx.notes?.toLowerCase().includes(q);
-      if (!matchTitle && !matchUser && !matchCat && !matchNotes) return false;
+      const matchUser = tx.userName.toLowerCase().includes(q);
+      if (!matchTitle && !matchNotes && !matchCat && !matchUser) return false;
     }
 
     return true;
@@ -132,6 +136,19 @@ export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
               ))}
             </div>
 
+            {/* Google Sheets button */}
+            {onOpenGoogleSheets && (
+              <button
+                id="btn-export-transactions-sheets"
+                onClick={onOpenGoogleSheets}
+                className="py-1.5 px-3 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs transition-all active:scale-95 shrink-0"
+                title="Open Google Sheets Hub to export or sync transactions"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Google Sheets</span>
+              </button>
+            )}
+
             {/* Download CSV button */}
             <button
               id="btn-download-transactions-csv"
@@ -146,63 +163,89 @@ export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
           </div>
         </div>
 
-        {/* Filter bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-          {/* Search box */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+        {/* Search & Filter Bar */}
+        <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          {/* Prominent Real-time Search Input Bar */}
+          <div className="relative flex items-center">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
+              id="input-transactions-search-bar"
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search vendor, description, notes..."
-              className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+              onKeyDown={e => {
+                if (e.key === 'Escape') setSearch('');
+              }}
+              placeholder="Search by transaction title, notes, or category name in real-time..."
+              className="w-full pl-10 pr-24 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/60 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all shadow-xs"
             />
+            {search && (
+              <div className="absolute right-2.5 flex items-center gap-1.5">
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  {filtered.length} {filtered.length === 1 ? 'match' : 'matches'}
+                </span>
+                <button
+                  id="btn-clear-transaction-search"
+                  type="button"
+                  onClick={() => setSearch('')}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700 transition-colors"
+                  title="Clear search (Esc)"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Category filter */}
-          <div>
-            <select
-              value={categoryFilter}
-              onChange={e => setCategoryFilter(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
-            >
-              <option value="all">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Secondary Dropdown Filter Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Category filter */}
+            <div>
+              <select
+                id="select-category-filter"
+                value={categoryFilter}
+                onChange={e => setCategoryFilter(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+              >
+                <option value="all">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Member filter */}
-          <div>
-            <select
-              value={memberFilter}
-              onChange={e => setMemberFilter(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
-            >
-              <option value="all">All Family Members</option>
-              {users.map(u => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName} ({u.relationship})
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* Member filter */}
+            <div>
+              <select
+                id="select-member-filter"
+                value={memberFilter}
+                onChange={e => setMemberFilter(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+              >
+                <option value="all">All Family Members</option>
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>
+                    {u.fullName} ({u.relationship})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Type filter */}
-          <div>
-            <select
-              value={typeFilter}
-              onChange={e => setTypeFilter(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
-            >
-              <option value="all">All Types (Expense & Income)</option>
-              <option value="expense">Expenses Only</option>
-              <option value="income">Income Only</option>
-            </select>
+            {/* Type filter */}
+            <div>
+              <select
+                id="select-type-filter"
+                value={typeFilter}
+                onChange={e => setTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500"
+              >
+                <option value="all">All Types (Expense & Income)</option>
+                <option value="expense">Expenses Only</option>
+                <option value="income">Income Only</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -210,8 +253,28 @@ export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
       {/* Table Card */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
         {filtered.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
-            No transactions match the selected filters or search criteria.
+          <div className="p-12 text-center text-xs space-y-2">
+            <Search className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto" />
+            <p className="font-semibold text-slate-700 dark:text-slate-300">
+              {search.trim()
+                ? `No transactions found matching "${search}"`
+                : 'No transactions match the selected filters'}
+            </p>
+            <p className="text-slate-400">
+              {search.trim()
+                ? 'Try checking the title, category, or note spelling, or clear the search.'
+                : 'Try adjusting your status or category filters.'}
+            </p>
+            {search.trim() && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="mt-2 py-1.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl transition-colors inline-flex items-center gap-1.5"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Clear search</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

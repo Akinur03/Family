@@ -20,11 +20,13 @@ import {
   Wallet,
   Tag,
   Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface FinancialReportsViewProps {
   summary: FinancialSummaryReport | null;
   onInspectReceipt: (tx: Transaction) => void;
+  onOpenGoogleSheets?: () => void;
 }
 
 const ICON_MAP: Record<string, any> = {
@@ -42,6 +44,7 @@ const ICON_MAP: Record<string, any> = {
 export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
   summary,
   onInspectReceipt,
+  onOpenGoogleSheets,
 }) => {
   if (!summary) {
     return (
@@ -79,15 +82,29 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
           </p>
         </div>
 
-        <button
-          id="btn-download-financial-summary-csv"
-          onClick={handleDownloadSummaryCsv}
-          className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-xs active:scale-95 shrink-0 self-start sm:self-auto"
-          title="Download consolidated family financial report and monthly summary as CSV for accounting"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Download CSV Report</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {onOpenGoogleSheets && (
+            <button
+              id="btn-reports-google-sheets"
+              onClick={onOpenGoogleSheets}
+              className="py-2 px-3.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-xs active:scale-95 shrink-0"
+              title="Export formatted report tabs directly to Google Sheets"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Google Sheets</span>
+            </button>
+          )}
+
+          <button
+            id="btn-download-financial-summary-csv"
+            onClick={handleDownloadSummaryCsv}
+            className="py-2 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all shadow-xs active:scale-95 shrink-0"
+            title="Download consolidated family financial report and monthly summary as CSV for accounting"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Download CSV</span>
+          </button>
+        </div>
       </div>
 
       {/* 4 KPI Hero Metric Cards */}

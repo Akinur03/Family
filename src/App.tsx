@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { GoogleSheetsProvider } from './context/GoogleSheetsContext';
 import { api } from './services/api';
 import { Transaction, Category, User, FinancialSummaryReport } from './types';
 import { Navbar, ActiveTab } from './components/Navbar';
@@ -9,6 +10,7 @@ import { TransactionsTableView } from './components/TransactionsTableView';
 import { AdminApprovalQueue } from './components/AdminApprovalQueue';
 import { AdminUserManagement } from './components/AdminUserManagement';
 import { CategoriesView } from './components/CategoriesView';
+import { GoogleSheetsView } from './components/GoogleSheetsView';
 import { SchemaArchitectureView } from './components/SchemaArchitectureView';
 import { TransactionModal } from './components/TransactionModal';
 import { CategoryModal } from './components/CategoryModal';
@@ -131,6 +133,29 @@ function AppContent() {
     }
   };
 
+  const handleImportTransactions = async (
+    items: Array<{
+      title: string;
+      amount: number;
+      type: 'expense' | 'income';
+      categoryId: string;
+      date: string;
+      notes?: string;
+    }>
+  ) => {
+    for (const item of items) {
+      await api.createTransaction({
+        title: item.title,
+        amount: item.amount,
+        type: item.type,
+        categoryId: item.categoryId,
+        date: item.date,
+        notes: item.notes,
+      });
+    }
+    await loadAllData();
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
       
@@ -210,6 +235,7 @@ function AppContent() {
           <FinancialReportsView
             summary={summary}
             onInspectReceipt={tx => setInspectingReceiptTx(tx)}
+            onOpenGoogleSheets={() => setActiveTab('sheets')}
           />
         )}
 
@@ -228,6 +254,7 @@ function AppContent() {
             onDeleteTransaction={handleDeleteTransaction}
             onApproveTransaction={handleApproveTransaction}
             onRejectTransaction={handleRejectTransaction}
+            onOpenGoogleSheets={() => setActiveTab('sheets')}
             title="Family Transactions Ledger"
             subtitle="Consolidated record of all verified and pending expenses across all household members."
           />
@@ -246,6 +273,7 @@ function AppContent() {
               setIsTxModalOpen(true);
             }}
             onDeleteTransaction={handleDeleteTransaction}
+            onOpenGoogleSheets={() => setActiveTab('sheets')}
             title={`Personal Log: ${user?.fullName || 'My Account'}`}
             subtitle="Track, view, and edit your submitted daily expenses, income, and uploaded screenshot proofs."
           />
@@ -274,6 +302,18 @@ function AppContent() {
             categories={categories}
             transactions={transactions}
             onOpenNewCategory={() => setIsCatModalOpen(true)}
+          />
+        )}
+
+        {activeTab === 'sheets' && (
+          <GoogleSheetsView
+            transactions={transactions}
+            categories={categories}
+            users={users}
+            summary={summary}
+            onRefreshData={loadAllData}
+            onImportTransactions={handleImportTransactions}
+            onShowToast={showToast}
           />
         )}
 
@@ -353,7 +393,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <GoogleSheetsProvider>
+        <AppContent />
+      </GoogleSheetsProvider>
     </AuthProvider>
   );
 }
