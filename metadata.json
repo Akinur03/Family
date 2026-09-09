@@ -1,0 +1,6 @@
+{
+  "name": "KinFinance - Family Expense & Financial Management",
+  "description": "Role-based family expense and financial management platform with receipt verification, member registration approval, customizable categories, and consolidated family budget reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

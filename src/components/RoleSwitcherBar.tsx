@@ -1,0 +1,99 @@
+import React from 'react';
+import { useAuth } from '../context/AuthContext';
+import { Sparkles, ShieldCheck, UserCheck, Clock, UserPlus } from 'lucide-react';
+
+interface RoleSwitcherBarProps {
+  onOpenAuthModal: (tab?: 'login' | 'register') => void;
+  pendingUserCount?: number;
+}
+
+export const RoleSwitcherBar: React.FC<RoleSwitcherBarProps> = ({
+  onOpenAuthModal,
+  pendingUserCount = 0,
+}) => {
+  const { user, switchDemoUser } = useAuth();
+
+  return (
+    <div className="bg-slate-900 text-slate-300 px-4 py-2 text-xs border-b border-slate-800">
+      <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 font-medium text-[11px] border border-emerald-800">
+            <Sparkles className="w-3 h-3 text-emerald-400" />
+            <span>Interactive Multi-Role Test Bar</span>
+          </div>
+          <span className="hidden sm:inline text-slate-400">
+            Switch between Family Head & Member personas in 1 click:
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Admin / Family Head */}
+          <button
+            id="role-switch-admin"
+            onClick={() => switchDemoUser('admin')}
+            className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium transition-all ${
+              user?.username === 'admin'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Arthur (Admin / Head)</span>
+          </button>
+
+          {/* Eleanor (Member) */}
+          <button
+            id="role-switch-eleanor"
+            onClick={() => switchDemoUser('eleanor')}
+            className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium transition-all ${
+              user?.username === 'eleanor'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+            }`}
+          >
+            <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Eleanor (Member)</span>
+          </button>
+
+          {/* Lucas (Member) */}
+          <button
+            id="role-switch-lucas"
+            onClick={() => switchDemoUser('lucas')}
+            className={`px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-medium transition-all ${
+              user?.username === 'lucas'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+            }`}
+          >
+            <UserCheck className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Lucas (Member)</span>
+          </button>
+
+          {/* Chloe (Pending registration) */}
+          <button
+            id="role-switch-chloe"
+            onClick={() => onOpenAuthModal('login')}
+            className="px-2.5 py-1 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-800/80 flex items-center gap-1.5 font-medium transition-all"
+            title="Test log-in with Chloe to experience the pending account barrier"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <span>Chloe (Pending)</span>
+            {pendingUserCount > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            )}
+          </button>
+
+          {/* Custom Sign In / Register */}
+          <button
+            id="btn-nav-custom-auth"
+            onClick={() => onOpenAuthModal('register')}
+            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1 font-medium transition-all"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-slate-400" />
+            <span>Register New</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
