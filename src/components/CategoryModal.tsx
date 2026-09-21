@@ -109,11 +109,11 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[96vh] sm:max-h-[92vh]">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
           <div>
             <h2 className="text-base font-semibold text-slate-900 dark:text-white">
               Create New Category
@@ -125,14 +125,15 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
           <button
             id="btn-close-cat-modal"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3.5 sm:space-y-4">
           {error && (
             <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -152,11 +153,11 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="e.g. Lawn Care, Pet Supplies, Streaming Apps"
-              className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+              className="w-full min-h-[42px] sm:min-h-0 px-3.5 py-2 text-base sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Type
@@ -165,7 +166,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 id="select-cat-type"
                 value={type}
                 onChange={e => setType(e.target.value as any)}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                className="w-full min-h-[42px] sm:min-h-0 px-3 py-2 text-base sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
               >
                 <option value="expense">Expense Category</option>
                 <option value="income">Income Category</option>
@@ -184,7 +185,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                 value={monthlyBudget}
                 onChange={e => setMonthlyBudget(e.target.value)}
                 placeholder="e.g. 250"
-                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                className="w-full min-h-[42px] sm:min-h-0 px-3 py-2 text-base sm:text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
               />
             </div>
           </div>
@@ -194,16 +195,17 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Color Tag
             </label>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               {COLOR_PRESETS.map(hex => (
                 <button
                   type="button"
                   key={hex}
                   onClick={() => setColor(hex)}
-                  className={`w-6 h-6 rounded-full transition-transform ${
+                  className={`w-7 h-7 sm:w-6 sm:h-6 rounded-full transition-transform min-h-[28px] min-w-[28px] ${
                     color === hex ? 'scale-125 ring-2 ring-offset-2 ring-slate-900 dark:ring-white' : 'hover:scale-110'
                   }`}
                   style={{ backgroundColor: hex }}
+                  aria-label={`Select color ${hex}`}
                 />
               ))}
             </div>
@@ -214,7 +216,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Select Icon
             </label>
-            <div className="grid grid-cols-5 gap-2 max-h-36 overflow-y-auto p-1.5 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-40 overflow-y-auto p-1.5 border border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
               {AVAILABLE_ICONS.map(item => {
                 const IconComponent = item.icon;
                 const isSelected = icon === item.name;
@@ -223,7 +225,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
                     type="button"
                     key={item.name}
                     onClick={() => setIcon(item.name)}
-                    className={`flex flex-col items-center justify-center p-2 rounded-lg border text-xs transition-all ${
+                    className={`min-h-[46px] flex flex-col items-center justify-center p-2 rounded-lg border text-xs transition-all ${
                       isSelected
                         ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                         : 'border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -249,17 +251,17 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="What belongs in this category?"
-              className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+              className="w-full min-h-[42px] sm:min-h-0 px-3 py-2 text-base sm:text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
             <button
               type="button"
               id="btn-cancel-cat"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              className="min-h-[44px] px-4 py-2.5 sm:py-2 text-sm sm:text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
             >
               Cancel
             </button>
@@ -267,7 +269,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
               type="submit"
               id="btn-save-cat"
               disabled={submitting}
-              className="px-4 py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-colors shadow-xs flex items-center gap-1.5"
+              className="min-h-[44px] px-5 py-2.5 sm:py-2 text-sm sm:text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-colors shadow-xs flex items-center gap-1.5 active:scale-95"
             >
               <Plus className="w-3.5 h-3.5" />
               {submitting ? 'Creating...' : 'Create Category'}
