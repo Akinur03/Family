@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { FinancialSummaryReport, Transaction } from '../types';
 import { exportFinancialSummaryToCsv } from '../utils/csvExport';
 import {
@@ -21,10 +21,24 @@ import {
   Tag,
   Download,
   FileSpreadsheet,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight,
+  Sparkles,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 
 interface FinancialReportsViewProps {
   summary: FinancialSummaryReport | null;
+  transactions?: Transaction[];
   onInspectReceipt: (tx: Transaction) => void;
   onOpenGoogleSheets?: () => void;
 }
@@ -43,9 +57,12 @@ const ICON_MAP: Record<string, any> = {
 
 export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
   summary,
+  transactions = [],
   onInspectReceipt,
   onOpenGoogleSheets,
 }) => {
+  const [statusScope, setStatusScope] = useState<'approved' | 'all'>('approved');
+
   if (!summary) {
     return (
       <div className="p-12 text-center text-slate-400 text-xs">
@@ -65,8 +82,149 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
     recentActivity,
   } = summary;
 
+  // Source transactions: prefer props.transactions if provided, fallback to summary.recentActivity
+  const sourceTransactions = useMemo(() => {
+    if (transactions && transactions.length > 0) return transactions;
+    return recentActivity || [];
+  }, [transactions, recentActivity]);
+
+  // Aggregate monthly expenses versus income
+  const monthlyChartData = useMemo(() => {
+    const monthMap: Record<string, { income: number; expenses: number; count: number }> = {};
+
+    sourceTransactions.forEach(tx => {
+      if (!tx.date) return;
+      if (statusScope === 'approved' && tx.status !== 'approved') return;
+      if (statusScope === 'all' && tx.status === 'rejected') return;
+
+      const date = new Date(tx.date);
+      if (isNaN(date.getTime())) return;
+
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthMap[key]) {
+        monthMap[key] = { income: 0, expenses: 0, count: 0 };
+      }
+      if (tx.type === 'income') {
+        monthMap[key].income += tx.amount;
+      } else {
+        monthMap[key].expenses += tx.amount;
+      }
+      monthMap[key].count += 1;
+    });
+
+    // Establish continuous chronological months (at least past 6 months leading up to latest or current)
+    let anchorDate = new Date();
+    const existingKeys = Object.keys(monthMap).sort();
+    if (existingKeys.length > 0) {
+      const latestKey = existingKeys[existingKeys.length - 1];
+      const [y, m] = latestKey.split('-').map(Number);
+      anchorDate = new Date(y, m - 1, 1);
+    }
+
+    const finalKeysSet = new Set<string>(existingKeys);
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(anchorDate.getFullYear(), anchorDate.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      finalKeysSet.add(key);
+      if (!monthMap[key]) {
+        monthMap[key] = { income: 0, expenses: 0, count: 0 };
+      }
+    }
+
+    const sortedKeys = Array.from(finalKeysSet).sort();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    return sortedKeys.map(key => {
+      const [y, m] = key.split('-').map(Number);
+      const label = `${monthNames[m - 1]} ${y}`;
+      const shortLabel = `${monthNames[m - 1]}`;
+      const data = monthMap[key] || { income: 0, expenses: 0, count: 0 };
+      const net = data.income - data.expenses;
+
+      return {
+        key,
+        month: label,
+        shortMonth: shortLabel,
+        income: Number(data.income.toFixed(2)),
+        expenses: Number(data.expenses.toFixed(2)),
+        net: Number(net.toFixed(2)),
+        count: data.count,
+      };
+    });
+  }, [sourceTransactions, statusScope]);
+
+  // Aggregate stats across the plotted chart timeline
+  const chartTotals = useMemo(() => {
+    const totalIncome = monthlyChartData.reduce((acc, curr) => acc + curr.income, 0);
+    const totalExpenses = monthlyChartData.reduce((acc, curr) => acc + curr.expenses, 0);
+    const monthsWithActivity = monthlyChartData.filter(m => m.income > 0 || m.expenses > 0);
+    const activeCount = Math.max(monthsWithActivity.length, 1);
+    const avgExpense = totalExpenses / activeCount;
+    const avgIncome = totalIncome / activeCount;
+    const netSavingsPeriod = totalIncome - totalExpenses;
+    const savingsRate = totalIncome > 0 ? (netSavingsPeriod / totalIncome) * 100 : 0;
+
+    return {
+      totalIncome,
+      totalExpenses,
+      avgExpense,
+      avgIncome,
+      netSavingsPeriod,
+      savingsRate,
+    };
+  }, [monthlyChartData]);
+
   const handleDownloadSummaryCsv = () => {
     exportFinancialSummaryToCsv(summary, 'family_financial_summary');
+  };
+
+  // Custom Recharts Tooltip styled to the KinFinance design theme
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const incomeVal = payload.find((p: any) => p.dataKey === 'income')?.value ?? 0;
+      const expensesVal = payload.find((p: any) => p.dataKey === 'expenses')?.value ?? 0;
+      const netVal = incomeVal - expensesVal;
+      const monthItem = monthlyChartData.find(m => m.shortMonth === label || m.month === label);
+      const fullMonthName = monthItem?.month || label;
+
+      return (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 shadow-xl text-xs space-y-2.5 min-w-48">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+            <span className="font-bold text-slate-900 dark:text-white">{fullMonthName}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium">
+              {monthItem?.count || 0} transaction{(monthItem?.count || 0) === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 shrink-0" />
+                Income / Inflow:
+              </span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                ${incomeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                <span className="w-2.5 h-2.5 rounded-xs bg-rose-500 shrink-0" />
+                Expenses:
+              </span>
+              <span className="font-bold text-rose-600 dark:text-rose-400">
+                ${expensesVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400 font-medium">Net Balance:</span>
+            <span className={`font-bold ${netVal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              {netVal >= 0 ? '+' : ''}${netVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -184,6 +342,148 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
             {pendingCount} transaction{pendingCount === 1 ? '' : 's'} awaiting approval
           </p>
+        </div>
+      </div>
+
+      {/* Monthly Expenses vs Income Bar Chart (Recharts) */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Monthly Cash Flow: Expenses vs. Income
+                </h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  Visual Trends
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Comparing monthly family expenditures against total household inflows to track net savings momentum.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            {/* Status Scope Selector */}
+            <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setStatusScope('approved')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  statusScope === 'approved'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                Approved Only
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusScope('all')}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  statusScope === 'all'
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                Include Pending
+              </button>
+            </div>
+
+            {/* Custom Chart Legend Badges */}
+            <div className="hidden md:flex items-center gap-3 text-xs pl-2 border-l border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500" />
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Income</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-xs bg-rose-500" />
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Expenses</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3 Trend Sub-Metric Chips */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+              <span>Avg. Monthly Expenses</span>
+              <ArrowDownRight className="w-3.5 h-3.5 text-rose-500" />
+            </div>
+            <p className="text-base font-bold text-slate-900 dark:text-white">
+              ${chartTotals.avgExpense.toFixed(2)}
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+              <span>Avg. Monthly Income</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
+            </div>
+            <p className="text-base font-bold text-slate-900 dark:text-white">
+              ${chartTotals.avgIncome.toFixed(2)}
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+              <span>Net Savings Rate</span>
+              <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+            </div>
+            <p className={`text-base font-bold ${chartTotals.savingsRate >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+              {chartTotals.savingsRate.toFixed(1)}% ({chartTotals.netSavingsPeriod >= 0 ? '+' : ''}${chartTotals.netSavingsPeriod.toFixed(2)})
+            </p>
+          </div>
+        </div>
+
+        {/* Recharts BarChart Canvas */}
+        <div className="h-72 sm:h-80 w-full min-w-0 pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={monthlyChartData}
+              margin={{ top: 10, right: 12, left: -10, bottom: 4 }}
+              barGap={4}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#94a3b8"
+                opacity={0.2}
+              />
+              <XAxis
+                dataKey="shortMonth"
+                tickLine={false}
+                axisLine={{ stroke: '#cbd5e1', strokeWidth: 1, opacity: 0.3 }}
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(val: number) => `$${val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}`}
+                tick={{ fontSize: 11, fill: '#94a3b8' }}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }} />
+              <Bar
+                dataKey="income"
+                name="Income"
+                fill="#10b981"
+                radius={[5, 5, 0, 0]}
+                maxBarSize={42}
+              />
+              <Bar
+                dataKey="expenses"
+                name="Expenses"
+                fill="#f43f5e"
+                radius={[5, 5, 0, 0]}
+                maxBarSize={42}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

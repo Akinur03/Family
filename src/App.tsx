@@ -234,6 +234,7 @@ function AppContent() {
         {activeTab === 'overview' && (
           <FinancialReportsView
             summary={summary}
+            transactions={transactions}
             onInspectReceipt={tx => setInspectingReceiptTx(tx)}
             onOpenGoogleSheets={() => setActiveTab('sheets')}
           />
