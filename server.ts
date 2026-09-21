@@ -4,6 +4,7 @@ import fs from 'fs';
 import multer from 'multer';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/store';
+import { SUPABASE_URL, SUPABASE_KEY, getSupabase, isSupabaseConfigured } from './server/supabase';
 
 const app = express();
 const PORT = 3000;
@@ -63,6 +64,53 @@ function getAuthUser(req: Request) {
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'KinFinance Backend API', time: new Date().toISOString() });
+});
+
+// Supabase configuration status
+app.get('/api/supabase/status', (_req, res) => {
+  res.json({
+    configured: isSupabaseConfigured(),
+    url: SUPABASE_URL,
+    hasKey: Boolean(SUPABASE_KEY),
+    source: process.env.SUPABASE_KEY ? 'SUPABASE_KEY' : process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' : 'none',
+  });
+});
+
+// Supabase connection test endpoint
+app.post('/api/supabase/test', async (req: Request, res: Response): Promise<any> => {
+  const { key, url } = req.body;
+  const clientKey = key || SUPABASE_KEY;
+  const targetUrl = url || SUPABASE_URL;
+
+  if (!clientKey) {
+    return res.status(400).json({
+      success: false,
+      message: 'SUPABASE_KEY is missing. Please provide SUPABASE_KEY in your environment variables or connection modal.',
+    });
+  }
+
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const testClient = createClient(targetUrl, clientKey);
+    const { error } = await testClient.from('categories').select('count', { count: 'exact', head: true });
+    
+    if (error && error.code !== 'PGRST116') {
+      return res.status(200).json({
+        success: false,
+        message: `Connected to Supabase at ${targetUrl}, but database query reported: ${error.message}. (Have you run the SQL migration script in your Supabase SQL Editor?)`,
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Successfully connected to Supabase PostgreSQL at ${targetUrl}!`,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: `Connection failed: ${err.message || 'Unknown network or authorization error'}`,
+    });
+  }
 });
 
 // Auth: Login

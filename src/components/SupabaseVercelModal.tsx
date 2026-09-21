@@ -4,6 +4,9 @@ import {
   saveSupabaseConfig,
   clearSupabaseConfig,
   testSupabaseConnection,
+  getServerSupabaseStatus,
+  testServerSupabaseConnection,
+  DEFAULT_SUPABASE_URL,
   SUPABASE_SQL_SCHEMA,
 } from '../services/supabase';
 import { BDT_SYMBOL } from '../utils/currency';
@@ -21,6 +24,7 @@ import {
   Key,
   Shield,
   Layers,
+  Code2,
 } from 'lucide-react';
 
 interface SupabaseVercelModalProps {
@@ -35,18 +39,25 @@ export const SupabaseVercelModal: React.FC<SupabaseVercelModalProps> = ({
   onShowToast,
 }) => {
   const [activeTab, setActiveTab] = useState<'supabase' | 'vercel' | 'sql'>('supabase');
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(DEFAULT_SUPABASE_URL);
   const [anonKey, setAnonKey] = useState('');
+  const [serverStatus, setServerStatus] = useState<{ configured: boolean; url: string; hasKey: boolean; source: string } | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [isSnippetCopied, setIsSnippetCopied] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       const config = getSupabaseConfig();
-      setUrl(config.url || '');
+      setUrl(config.url || DEFAULT_SUPABASE_URL);
       setAnonKey(config.anonKey || '');
       setTestResult(null);
+
+      // Fetch server Supabase configuration status
+      getServerSupabaseStatus().then(status => {
+        setServerStatus(status);
+      });
     }
   }, [isOpen]);
 
@@ -171,28 +182,90 @@ export const SupabaseVercelModal: React.FC<SupabaseVercelModalProps> = ({
                 <span className="font-semibold">Supabase PostgreSQL Ready:</span> Connect your Supabase project to store household transactions, categories, and member approvals in real-time. Pre-configured for Bangladeshi Taka ({BDT_SYMBOL} BDT) budgets.
               </div>
 
-              {/* Status pill */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-slate-700 dark:text-slate-200">Current Status:</span>
-                  {currentConfig.isConfigured ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold">
-                      <CheckCircle2 className="w-3 h-3" /> Configured ({currentConfig.source})
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">
-                      Using Local Family Store (Ready for Supabase)
-                    </span>
+              {/* Status pill & Server Detection */}
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">Client Status:</span>
+                    {currentConfig.isConfigured ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold">
+                        <CheckCircle2 className="w-3 h-3" /> Configured ({currentConfig.source})
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-medium">
+                        Using Local Family Store
+                      </span>
+                    )}
+                  </div>
+                  {currentConfig.isConfigured && (
+                    <button
+                      onClick={handleClear}
+                      className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium self-start sm:self-auto"
+                    >
+                      Disconnect
+                    </button>
                   )}
                 </div>
-                {currentConfig.isConfigured && (
+
+                {/* Server-side status */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 text-xs">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">Server Backend Status:</span>
+                    {serverStatus?.hasKey ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 font-semibold">
+                        <CheckCircle2 className="w-3 h-3" /> SUPABASE_KEY Loaded ({serverStatus.source})
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-medium">
+                        SUPABASE_KEY pending in server environment
+                      </span>
+                    )}
+                  </div>
+                  {serverStatus?.hasKey && (
+                    <button
+                      onClick={async () => {
+                        setIsTesting(true);
+                        setTestResult(null);
+                        const res = await testServerSupabaseConnection();
+                        setTestResult(res);
+                        setIsTesting(false);
+                      }}
+                      disabled={isTesting}
+                      className="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold"
+                    >
+                      Test Server Key
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Code Snippet Box */}
+              <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950 p-3.5 space-y-2">
+                <div className="flex items-center justify-between text-slate-400 text-xs">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-400">
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>Project Supabase Client</span>
+                  </div>
                   <button
-                    onClick={handleClear}
-                    className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium"
+                    onClick={() => {
+                      const snippet = `import { createClient } from '@supabase/supabase-js'\nconst supabaseUrl = 'https://ivudmzdabfehxlkwyuab.supabase.co'\nconst supabaseKey = process.env.SUPABASE_KEY\nconst supabase = createClient(supabaseUrl, supabaseKey)`;
+                      navigator.clipboard.writeText(snippet);
+                      setIsSnippetCopied(true);
+                      if (onShowToast) onShowToast('Client snippet copied to clipboard!', 'success');
+                      setTimeout(() => setIsSnippetCopied(false), 2500);
+                    }}
+                    className="flex items-center gap-1 text-[11px] text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg transition-colors"
                   >
-                    Disconnect
+                    {isSnippetCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{isSnippetCopied ? 'Copied' : 'Copy'}</span>
                   </button>
-                )}
+                </div>
+                <pre className="text-[11px] font-mono text-slate-200 overflow-x-auto leading-relaxed">
+{`import { createClient } from '@supabase/supabase-js'
+const supabaseUrl = 'https://ivudmzdabfehxlkwyuab.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)`}
+                </pre>
               </div>
 
               {testResult && (
@@ -216,43 +289,57 @@ export const SupabaseVercelModal: React.FC<SupabaseVercelModalProps> = ({
               <div className="space-y-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Supabase Project URL (VITE_SUPABASE_URL)
+                    Supabase Project URL (SUPABASE_URL / VITE_SUPABASE_URL)
                   </label>
                   <input
                     type="text"
                     value={url}
                     onChange={e => setUrl(e.target.value)}
-                    placeholder="https://xyzcompany.supabase.co"
-                    className="w-full min-h-[42px] px-3.5 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                    placeholder="https://ivudmzdabfehxlkwyuab.supabase.co"
+                    className="w-full min-h-[42px] px-3.5 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden font-mono"
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Found in your Supabase project dashboard under Settings → API.
+                    Pre-set to your KinFinance Supabase instance (<span className="text-emerald-600 dark:text-emerald-400 font-mono">https://ivudmzdabfehxlkwyuab.supabase.co</span>).
                   </p>
                 </div>
 
                 <div>
                   <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                    Supabase Anon Public API Key (VITE_SUPABASE_ANON_KEY)
+                    Supabase API Key (SUPABASE_KEY / VITE_SUPABASE_ANON_KEY)
                   </label>
                   <input
                     type="password"
                     value={anonKey}
                     onChange={e => setAnonKey(e.target.value)}
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                    className="w-full min-h-[42px] px-3.5 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                    placeholder="Enter anon public or service_role key..."
+                    className="w-full min-h-[42px] px-3.5 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden font-mono"
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
-                    The public anonymous JWT token safe for client-side queries.
+                    Obtained from Supabase Project Settings → API (<span className="font-mono">anon public</span> or <span className="font-mono">service_role</span> key).
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 pt-2">
+                <div className="flex flex-wrap items-center gap-2 pt-2">
                   <button
                     onClick={handleTestConnection}
                     disabled={isTesting || !url || !anonKey}
                     className="min-h-[42px] px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
                   >
-                    {isTesting ? 'Testing Connection...' : 'Test & Connect'}
+                    {isTesting ? 'Testing Connection...' : 'Test & Connect (Client)'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!anonKey) return;
+                      setIsTesting(true);
+                      setTestResult(null);
+                      const res = await testServerSupabaseConnection(anonKey.trim(), url.trim());
+                      setTestResult(res);
+                      setIsTesting(false);
+                    }}
+                    disabled={isTesting || !anonKey}
+                    className="min-h-[42px] px-4 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs"
+                  >
+                    {isTesting ? 'Testing Server...' : 'Test Server Proxy'}
                   </button>
                   <button
                     onClick={handleSave}

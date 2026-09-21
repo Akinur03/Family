@@ -1,8 +1,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
+export const DEFAULT_SUPABASE_URL = 'https://ivudmzdabfehxlkwyuab.supabase.co';
+
 // Environment variables or client-side storage for live Supabase testing
-const ENV_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const ENV_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const ENV_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const ENV_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_KEY || '';
 
 const STORAGE_KEY_URL = 'kinfinance_supabase_url';
 const STORAGE_KEY_KEY = 'kinfinance_supabase_anon_key';
@@ -18,7 +20,7 @@ export function getSupabaseConfig(): SupabaseConfig {
   const storedUrl = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_URL) : null;
   const storedKey = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_KEY) : null;
 
-  if (ENV_SUPABASE_URL && ENV_SUPABASE_ANON_KEY) {
+  if (ENV_SUPABASE_ANON_KEY) {
     return {
       url: ENV_SUPABASE_URL,
       anonKey: ENV_SUPABASE_ANON_KEY,
@@ -27,9 +29,9 @@ export function getSupabaseConfig(): SupabaseConfig {
     };
   }
 
-  if (storedUrl && storedKey) {
+  if (storedKey) {
     return {
-      url: storedUrl,
+      url: storedUrl || DEFAULT_SUPABASE_URL,
       anonKey: storedKey,
       isConfigured: true,
       source: 'storage',
@@ -37,7 +39,7 @@ export function getSupabaseConfig(): SupabaseConfig {
   }
 
   return {
-    url: '',
+    url: storedUrl || DEFAULT_SUPABASE_URL,
     anonKey: '',
     isConfigured: false,
     source: 'none',
@@ -94,7 +96,7 @@ export async function testSupabaseConnection(url?: string, anonKey?: string): Pr
     const testKey = anonKey || getSupabaseConfig().anonKey;
 
     if (!testUrl || !testKey) {
-      return { success: false, message: 'Supabase URL and Anon Key are required.' };
+      return { success: false, message: 'Supabase URL and API Key are required.' };
     }
 
     const testClient = createClient(testUrl, testKey);
@@ -108,6 +110,37 @@ export async function testSupabaseConnection(url?: string, anonKey?: string): Pr
     return { success: true, message: 'Successfully connected to Supabase PostgreSQL database!' };
   } catch (err: any) {
     return { success: false, message: err.message || 'Connection failed' };
+  }
+}
+
+/**
+ * Checks server-side Supabase environment status
+ */
+export async function getServerSupabaseStatus(): Promise<{ configured: boolean; url: string; hasKey: boolean; source: string }> {
+  try {
+    const res = await fetch('/api/supabase/status');
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {
+    // Ignore error
+  }
+  return { configured: false, url: DEFAULT_SUPABASE_URL, hasKey: false, source: 'none' };
+}
+
+/**
+ * Tests connection via the server using process.env.SUPABASE_KEY
+ */
+export async function testServerSupabaseConnection(key?: string, url?: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const res = await fetch('/api/supabase/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key, url }),
+    });
+    return await res.json();
+  } catch (err: any) {
+    return { success: false, message: err.message || 'Failed to reach server test endpoint' };
   }
 }
 
