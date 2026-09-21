@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Transaction } from '../types';
+import { formatBDT } from '../utils/currency';
 import {
   CheckCircle2,
   XCircle,
@@ -84,7 +85,7 @@ export const AdminApprovalQueue: React.FC<AdminApprovalQueueProps> = ({
             Total Pending Approval
           </span>
           <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
-            ${totalPendingValue.toFixed(2)}
+            {formatBDT(totalPendingValue)}
           </span>
         </div>
       </div>
@@ -129,7 +130,7 @@ export const AdminApprovalQueue: React.FC<AdminApprovalQueueProps> = ({
 
                     <div className="text-right">
                       <span className="text-lg font-bold text-slate-900 dark:text-white">
-                        ${tx.amount.toFixed(2)}
+                        {formatBDT(tx.amount)}
                       </span>
                       <span className="text-[10px] text-slate-400 block uppercase">
                         {tx.type}

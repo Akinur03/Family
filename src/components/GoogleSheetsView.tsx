@@ -3,6 +3,7 @@ import { Transaction, Category, User, FinancialSummaryReport } from '../types';
 import { useGoogleSheets } from '../context/GoogleSheetsContext';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { GoogleSheetsConfirmModal } from './GoogleSheetsConfirmModal';
+import { formatBDT } from '../utils/currency';
 import {
   listDriveSpreadsheets,
   createKinFinanceSpreadsheet,
@@ -862,7 +863,7 @@ export const GoogleSheetsView: React.FC<GoogleSheetsViewProps> = ({
                       <th className="p-3">Date</th>
                       <th className="p-3">Vendor / Title</th>
                       <th className="p-3">Type</th>
-                      <th className="p-3">Amount ($)</th>
+                      <th className="p-3">Amount (BDT ৳)</th>
                       <th className="p-3">Assign Category</th>
                     </tr>
                   </thead>
@@ -900,7 +901,7 @@ export const GoogleSheetsView: React.FC<GoogleSheetsViewProps> = ({
                           </span>
                         </td>
                         <td className="p-3 font-bold text-slate-900 dark:text-white font-mono">
-                          ${row.amount.toFixed(2)}
+                          {formatBDT(row.amount)}
                         </td>
                         <td className="p-3">
                           <select

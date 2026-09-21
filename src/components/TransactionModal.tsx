@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Category, Transaction } from '../types';
 import { api } from '../services/api';
+import { formatBDT, BDT_SYMBOL } from '../utils/currency';
 import {
   X,
   UploadCloud,
@@ -168,7 +169,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       return;
     }
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setFormError('Please enter a valid amount greater than $0');
+      setFormError('Please enter a valid amount greater than ৳0');
       return;
     }
     if (!categoryId) {
@@ -303,10 +304,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Amount (USD) *
+                Amount (BDT ৳) *
               </label>
               <div className="relative">
-                <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-3 sm:top-2.5" />
+                <span className="font-bold text-slate-400 absolute left-3 top-2.5 sm:top-2 text-sm select-none">
+                  {BDT_SYMBOL}
+                </span>
                 <input
                   id="input-tx-amount"
                   type="number"
@@ -347,7 +350,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               >
                 {filteredCategories.map(cat => (
                   <option key={cat.id} value={cat.id}>
-                    {cat.name} {cat.monthlyBudget ? `($${cat.monthlyBudget} budget)` : ''}
+                    {cat.name} {cat.monthlyBudget ? `(${formatBDT(cat.monthlyBudget, { hideDecimals: true })} budget)` : ''}
                   </option>
                 ))}
               </select>

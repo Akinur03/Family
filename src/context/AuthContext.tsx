@@ -26,22 +26,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     async function initAuth() {
       try {
-        const currentUser = await api.getCurrentUser();
-        if (currentUser) {
-          setUser(currentUser);
-        } else {
-          // If no user saved yet, auto log-in as Arthur Pendelton (Admin) for instant interactive experience
-          if (!authStorage.getToken()) {
-            try {
-              const res = await api.switchDemoUser('admin');
-              setUser(res.user);
-            } catch {
-              // ignore
-            }
+        const token = authStorage.getToken();
+        if (token) {
+          const currentUser = await api.getCurrentUser();
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            authStorage.clear();
+            setUser(null);
           }
+        } else {
+          setUser(null);
         }
       } catch (err) {
         console.error('Failed to init auth', err);
+        authStorage.clear();
+        setUser(null);
       } finally {
         setIsLoading(false);
       }

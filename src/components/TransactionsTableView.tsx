@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Transaction, Category, User } from '../types';
 import { exportTransactionsToCsv } from '../utils/csvExport';
+import { formatBDT, BDT_SYMBOL } from '../utils/currency';
 import {
   Search,
   Filter,
@@ -339,7 +340,7 @@ export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
                               : 'text-slate-900 dark:text-white'
                           }`}
                         >
-                          {tx.type === 'income' ? '+' : '-'}${tx.amount.toFixed(2)}
+                          {tx.type === 'income' ? '+' : '-'}{formatBDT(tx.amount)}
                         </span>
                         <span className="block text-[10px] text-slate-400 capitalize">
                           {tx.type}
@@ -464,7 +465,7 @@ export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
                       className="px-5 py-3 text-right cursor-pointer hover:text-slate-900 dark:hover:text-white select-none"
                     >
                       <div className="flex items-center justify-end gap-1">
-                        <span>Amount</span>
+                        <span>Amount (৳)</span>
                         <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </th>
@@ -573,7 +574,7 @@ export const TransactionsTableView: React.FC<TransactionsTableViewProps> = ({
                                 : 'text-slate-900 dark:text-white'
                             }`}
                           >
-                            {tx.type === 'income' ? '+' : '-'}${tx.amount.toFixed(2)}
+                            {tx.type === 'income' ? '+' : '-'}{formatBDT(tx.amount)}
                           </span>
                         </td>
 

@@ -90,7 +90,7 @@ export async function createKinFinanceSpreadsheet(
     'Title / Description',
     'Type',
     'Category',
-    'Amount ($)',
+    'Amount (BDT ৳)',
     'Member Name',
     'Status',
     'Receipt Attached',
@@ -146,7 +146,7 @@ export async function createKinFinanceSpreadsheet(
                 if (typeof val === 'number') {
                   return {
                     userEnteredValue: { numberValue: val },
-                    userEnteredFormat: { numberFormat: { type: 'CURRENCY', pattern: '$#,##0.00' } },
+                    userEnteredFormat: { numberFormat: { type: 'CURRENCY', pattern: '"৳"#,##0.00' } },
                   };
                 }
                 return {
@@ -163,7 +163,7 @@ export async function createKinFinanceSpreadsheet(
   // Optional tab: Executive Summary & KPI metrics
   if (summary) {
     const summaryRows = [
-      ['Metric', 'Amount / Value ($)', 'Description'],
+      ['Metric', 'Amount / Value (BDT ৳)', 'Description'],
       ['Total Approved Family Expenses', summary.totalApprovedExpenses, 'Verified receipts approved by Family Head'],
       ['Total Approved Family Inflow / Income', summary.totalApprovedIncome, 'Verified family deposits and income'],
       ['Net Family Reserve / Savings', summary.netSavings, summary.netSavings >= 0 ? 'Surplus in family vault' : 'Deficit in current period'],
@@ -197,7 +197,7 @@ export async function createKinFinanceSpreadsheet(
                 if (typeof val === 'number') {
                   return {
                     userEnteredValue: { numberValue: val },
-                    userEnteredFormat: { numberFormat: { type: 'CURRENCY', pattern: '$#,##0.00' } },
+                    userEnteredFormat: { numberFormat: { type: 'CURRENCY', pattern: '"৳"#,##0.00' } },
                   };
                 }
                 return {
@@ -212,7 +212,7 @@ export async function createKinFinanceSpreadsheet(
 
     // Optional tab: Category Breakdown
     if (summary.categoryBreakdown && summary.categoryBreakdown.length > 0) {
-      const catHeaders = ['Category Name', 'Total Spent ($)', 'Share (%)', 'Transactions Count', 'Monthly Budget ($)', 'Budget Status'];
+      const catHeaders = ['Category Name', 'Total Spent (BDT ৳)', 'Share (%)', 'Transactions Count', 'Monthly Budget (BDT ৳)', 'Budget Status'];
       const catRows = summary.categoryBreakdown.map(cat => {
         const budget = cat.budget || 0;
         const status = budget > 0 && cat.amount > budget ? 'OVER BUDGET' : budget > 0 ? 'Within Budget' : 'No Limit';
@@ -267,7 +267,7 @@ export async function createKinFinanceSpreadsheet(
 
     // Optional tab: Member Contributions
     if (summary.memberContributions && summary.memberContributions.length > 0) {
-      const memHeaders = ['Member Name', 'Relationship', 'Total Spent ($)', 'Share (%)', 'Transactions Count'];
+      const memHeaders = ['Member Name', 'Relationship', 'Total Spent (BDT ৳)', 'Share (%)', 'Transactions Count'];
       const memRows = summary.memberContributions.map(mem => [
         mem.userName,
         mem.relationship,

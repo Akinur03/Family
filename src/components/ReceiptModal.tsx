@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Transaction } from '../types';
+import { formatBDT } from '../utils/currency';
 import { X, ZoomIn, ZoomOut, RotateCw, Download, CheckCircle2, XCircle, ExternalLink, Calendar, User, Tag, FileText } from 'lucide-react';
 
 interface ReceiptModalProps {
@@ -194,10 +195,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
                       transaction.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
                     }`}
                   >
-                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                    {transaction.type === 'income' ? '+' : '-'}{formatBDT(transaction.amount)}
                   </span>
                   <span className="text-xs font-medium uppercase text-slate-500">
-                    USD ({transaction.type})
+                    BDT ({transaction.type})
                   </span>
                 </div>
               </div>

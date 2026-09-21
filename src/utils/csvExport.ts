@@ -41,7 +41,7 @@ export function exportTransactionsToCsv(transactions: Transaction[], filenamePre
     'Title / Description',
     'Type',
     'Category',
-    'Amount ($)',
+    'Amount (BDT ৳)',
     'Member Name',
     'Status',
     'Receipt Proof Attached',
@@ -93,7 +93,7 @@ export function exportFinancialSummaryToCsv(summary: FinancialSummaryReport, fil
 
   // 1. EXECUTIVE KPI SUMMARY
   lines.push(['--- 1. EXECUTIVE FINANCIAL METRICS ---'].map(escapeCsvCell).join(','));
-  lines.push(['Metric', 'Amount / Value ($)', 'Description'].map(escapeCsvCell).join(','));
+  lines.push(['Metric', 'Amount / Value (BDT ৳)', 'Description'].map(escapeCsvCell).join(','));
   lines.push([
     'Total Approved Family Expenses',
     summary.totalApprovedExpenses.toFixed(2),
@@ -126,10 +126,10 @@ export function exportFinancialSummaryToCsv(summary: FinancialSummaryReport, fil
   lines.push([
     'Category ID',
     'Category Name',
-    'Total Spent ($)',
+    'Total Spent (BDT ৳)',
     'Share (%)',
     'Transactions Count',
-    'Monthly Budget Limit ($)',
+    'Monthly Budget Limit (BDT ৳)',
     'Budget Utilization (%)',
     'Budget Status',
   ].map(escapeCsvCell).join(','));
@@ -157,7 +157,7 @@ export function exportFinancialSummaryToCsv(summary: FinancialSummaryReport, fil
     'User ID',
     'Member Name',
     'Relationship',
-    'Total Spent ($)',
+    'Total Spent (BDT ৳)',
     'Share of Approved Expenses (%)',
     'Transactions Count',
   ].map(escapeCsvCell).join(','));
@@ -181,7 +181,7 @@ export function exportFinancialSummaryToCsv(summary: FinancialSummaryReport, fil
     'Title / Vendor',
     'Type',
     'Category',
-    'Amount ($)',
+    'Amount (BDT ৳)',
     'Submitted By',
     'Status',
     'Receipt Proof Attached',

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { FinancialSummaryReport, Transaction } from '../types';
 import { exportFinancialSummaryToCsv } from '../utils/csvExport';
+import { formatBDT, BDT_SYMBOL } from '../utils/currency';
 import {
   TrendingDown,
   TrendingUp,
@@ -202,7 +203,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
                 Income / Inflow:
               </span>
               <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                ${incomeVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatBDT(incomeVal)}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -211,14 +212,14 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
                 Expenses:
               </span>
               <span className="font-bold text-rose-600 dark:text-rose-400">
-                ${expensesVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {formatBDT(expensesVal)}
               </span>
             </div>
           </div>
           <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
             <span className="text-slate-500 dark:text-slate-400 font-medium">Net Balance:</span>
             <span className={`font-bold ${netVal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-              {netVal >= 0 ? '+' : ''}${netVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatBDT(netVal, { showSign: true })}
             </span>
           </div>
         </div>
@@ -278,7 +279,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
             </div>
           </div>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            ${totalApprovedExpenses.toFixed(2)}
+            {formatBDT(totalApprovedExpenses)}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3 text-emerald-500" />
@@ -297,7 +298,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
             </div>
           </div>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">
-            ${totalApprovedIncome.toFixed(2)}
+            {formatBDT(totalApprovedIncome)}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
             Total verified family deposits
@@ -319,7 +320,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
               netSavings >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
             }`}
           >
-            ${netSavings.toFixed(2)}
+            {formatBDT(netSavings, { showSign: true })}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
             {netSavings >= 0 ? 'Surplus retained in family vault' : 'Deficit across current billing cycle'}
@@ -337,7 +338,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
             </div>
           </div>
           <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-            ${pendingAmount.toFixed(2)}
+            {formatBDT(pendingAmount)}
           </p>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
             {pendingCount} transaction{pendingCount === 1 ? '' : 's'} awaiting approval
@@ -416,7 +417,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
               <ArrowDownRight className="w-3.5 h-3.5 text-rose-500" />
             </div>
             <p className="text-base font-bold text-slate-900 dark:text-white">
-              ${chartTotals.avgExpense.toFixed(2)}
+              {formatBDT(chartTotals.avgExpense)}
             </p>
           </div>
 
@@ -426,7 +427,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
               <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />
             </div>
             <p className="text-base font-bold text-slate-900 dark:text-white">
-              ${chartTotals.avgIncome.toFixed(2)}
+              {formatBDT(chartTotals.avgIncome)}
             </p>
           </div>
 
@@ -436,7 +437,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-blue-500" />
             </div>
             <p className={`text-base font-bold ${chartTotals.savingsRate >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-              {chartTotals.savingsRate.toFixed(1)}% ({chartTotals.netSavingsPeriod >= 0 ? '+' : ''}${chartTotals.netSavingsPeriod.toFixed(2)})
+              {chartTotals.savingsRate.toFixed(1)}% ({formatBDT(chartTotals.netSavingsPeriod, { showSign: true })})
             </p>
           </div>
         </div>
@@ -464,7 +465,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
               <YAxis
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(val: number) => `$${val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}`}
+                tickFormatter={(val: number) => formatBDT(val, { compact: true })}
                 tick={{ fontSize: 11, fill: '#94a3b8' }}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.08)' }} />
@@ -536,7 +537,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
 
                       <div className="text-right">
                         <span className="font-bold text-slate-900 dark:text-white">
-                          ${item.amount.toFixed(2)}
+                          {formatBDT(item.amount)}
                         </span>
                         <span className="text-slate-400 text-[11px] ml-1.5">
                           ({item.percentage}%)
@@ -559,7 +560,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
                     {budget > 0 && (
                       <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
                         <span>
-                          Monthly Budget: ${budget.toFixed(0)}
+                          Monthly Budget: {formatBDT(budget, { hideDecimals: true })}
                         </span>
                         <span className={isOverBudget ? 'text-rose-500 font-bold' : 'text-slate-500'}>
                           {isOverBudget ? 'Budget Exceeded!' : `${budgetPercent}% of monthly limit`}
@@ -602,7 +603,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-slate-900 dark:text-white">
-                        ${member.totalSpent.toFixed(2)}
+                        {formatBDT(member.totalSpent)}
                       </p>
                       <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                         {member.percentage}% of total
@@ -687,7 +688,7 @@ export const FinancialReportsView: React.FC<FinancialReportsViewProps> = ({
                     tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'
                   }`}
                 >
-                  {tx.type === 'income' ? '+' : '-'}${tx.amount.toFixed(2)}
+                  {tx.type === 'income' ? '+' : '-'}{formatBDT(tx.amount)}
                 </span>
               </div>
             </div>
