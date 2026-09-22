@@ -46,10 +46,34 @@ export function getSupabaseConfig(): SupabaseConfig {
   };
 }
 
+export function cleanSupabaseInput(val: string): string {
+  if (!val) return '';
+  let cleaned = val.trim();
+  if (
+    (cleaned.startsWith("'") && cleaned.endsWith("'")) ||
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith('`') && cleaned.endsWith('`'))
+  ) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  return cleaned;
+}
+
+export function cleanSupabaseUrl(url: string): string {
+  let cleaned = cleanSupabaseInput(url);
+  if (!cleaned) return '';
+  if (!/^https?:\/\//i.test(cleaned)) {
+    cleaned = `https://${cleaned}`;
+  }
+  return cleaned;
+}
+
 export function saveSupabaseConfig(url: string, anonKey: string): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_URL, url.trim());
-    localStorage.setItem(STORAGE_KEY_KEY, anonKey.trim());
+    const cleanedUrl = cleanSupabaseUrl(url);
+    const cleanedKey = cleanSupabaseInput(anonKey);
+    localStorage.setItem(STORAGE_KEY_URL, cleanedUrl);
+    localStorage.setItem(STORAGE_KEY_KEY, cleanedKey);
     // Invalidate cached client
     cachedClient = null;
   }
@@ -74,7 +98,9 @@ export function getSupabaseClient(): SupabaseClient | null {
   }
 
   try {
-    cachedClient = createClient(config.url, config.anonKey, {
+    const cleanedUrl = cleanSupabaseUrl(config.url);
+    const cleanedKey = cleanSupabaseInput(config.anonKey);
+    cachedClient = createClient(cleanedUrl, cleanedKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -92,8 +118,11 @@ export function getSupabaseClient(): SupabaseClient | null {
  */
 export async function testSupabaseConnection(url?: string, anonKey?: string): Promise<{ success: boolean; message: string }> {
   try {
-    const testUrl = url || getSupabaseConfig().url;
-    const testKey = anonKey || getSupabaseConfig().anonKey;
+    const rawUrl = url || getSupabaseConfig().url;
+    const rawKey = anonKey || getSupabaseConfig().anonKey;
+
+    const testUrl = cleanSupabaseUrl(rawUrl);
+    const testKey = cleanSupabaseInput(rawKey);
 
     if (!testUrl || !testKey) {
       return { success: false, message: 'Supabase URL and API Key are required.' };
@@ -109,7 +138,14 @@ export async function testSupabaseConnection(url?: string, anonKey?: string): Pr
 
     return { success: true, message: 'Successfully connected to Supabase PostgreSQL database!' };
   } catch (err: any) {
-    return { success: false, message: err.message || 'Connection failed' };
+    const msg = err?.message || String(err);
+    if (msg.includes('pattern') || err?.name === 'SyntaxError') {
+      return {
+        success: false,
+        message: 'The URL or API key format did not match the expected pattern. Ensure the URL starts with https:// and the key is your full project JWT (anon or service_role).',
+      };
+    }
+    return { success: false, message: msg || 'Connection failed' };
   }
 }
 

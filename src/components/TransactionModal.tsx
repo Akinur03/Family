@@ -44,6 +44,18 @@ const ICON_MAP: Record<string, any> = {
   Tag,
 };
 
+const sanitizeDateForInput = (d?: string): string => {
+  if (!d) return new Date().toISOString().split('T')[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  try {
+    const parsed = new Date(d);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split('T')[0];
+    }
+  } catch {}
+  return new Date().toISOString().split('T')[0];
+};
+
 export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
@@ -79,7 +91,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setAmount(initialTransaction.amount.toString());
       setType(initialTransaction.type);
       setCategoryId(initialTransaction.categoryId);
-      setDate(initialTransaction.date);
+      setDate(sanitizeDateForInput(initialTransaction.date));
       setNotes(initialTransaction.notes || '');
       setReceiptUrl(initialTransaction.receiptUrl || '');
       setReceiptFileName(initialTransaction.receiptFileName || '');

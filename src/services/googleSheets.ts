@@ -146,7 +146,7 @@ export async function createKinFinanceSpreadsheet(
                 if (typeof val === 'number') {
                   return {
                     userEnteredValue: { numberValue: val },
-                    userEnteredFormat: { numberFormat: { type: 'CURRENCY', pattern: '"৳"#,##0.00' } },
+                    userEnteredFormat: { numberFormat: { type: 'NUMBER', pattern: '#,##0.00' } },
                   };
                 }
                 return {
@@ -197,7 +197,7 @@ export async function createKinFinanceSpreadsheet(
                 if (typeof val === 'number') {
                   return {
                     userEnteredValue: { numberValue: val },
-                    userEnteredFormat: { numberFormat: { type: 'CURRENCY', pattern: '"৳"#,##0.00' } },
+                    userEnteredFormat: { numberFormat: { type: 'NUMBER', pattern: '#,##0.00' } },
                   };
                 }
                 return {
